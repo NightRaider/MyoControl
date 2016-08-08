@@ -11,11 +11,13 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
     public float speed;
+    public float factor;
 
     public GameObject myo;
-    private Pose _lastPose = Pose.Unknown; 
-    
+    private Pose _lastPose = Pose.Unknown;
 
+    private float _referenceRoll = 0.0f;
+    private float _referencePitch = 0.0f;
 	// Use this for initialization
 	void Start () {
         rb = GetComponent<Rigidbody>();
@@ -29,15 +31,29 @@ public class PlayerController : MonoBehaviour
         if (thalmicMyo.pose != _lastPose)
         {
             _lastPose = thalmicMyo.pose;
+            if (thalmicMyo.pose == Pose.Fist)
+            {
+                Vector3 referenceZeroRoll = computeZeroRollVector(myo.transform.forward);
+                _referenceRoll = rollFromZero(referenceZeroRoll, myo.transform.forward, myo.transform.up);
 
+                
+
+            }
         }
 
+        Vector3 zeroRoll = computeZeroRollVector(myo.transform.forward);
+        float roll = rollFromZero(zeroRoll, myo.transform.forward, myo.transform.up);
+        float relativeRoll = normalizeAngle(roll - _referenceRoll);
+        
         if (thalmicMyo.pose == _lastPose && _lastPose == Pose.Fist)
         {
-            float moveHorizontal = Input.GetAxis("Horizontal");
+
+
+
+            float moveHorizontal = -relativeRoll;
             float moveVertical = Input.GetAxis("Vertical");
 
-            Vector3 movement = new Vector3(moveHorizontal, 0.0f, moveVertical);
+            Vector3 movement = new Vector3(moveHorizontal * factor, 0.0f, moveVertical);
 
             rb.AddForce(movement * speed);
         }
