@@ -18,8 +18,9 @@ public class PlayerController : MonoBehaviour
 
     private float _referenceRoll = 0.0f;
     private float _referencePitch = 0.0f;
-	// Use this for initialization
-	void Start () {
+    private float _referenceYaw = 0.0f;
+    // Use this for initialization
+    void Start () {
         rb = GetComponent<Rigidbody>();
 	}
 	
@@ -36,6 +37,10 @@ public class PlayerController : MonoBehaviour
                 Vector3 referenceZeroRoll = computeZeroRollVector(myo.transform.forward);
                 _referenceRoll = rollFromZero(referenceZeroRoll, myo.transform.forward, myo.transform.up);
 
+                Vector3 referenceZeroYaw = computeZeroYawVector(myo.transform.up);
+                _referenceYaw = yawFromZero(referenceZeroYaw, myo.transform.up, myo.transform.right);
+
+
                 Vector3 referenceZeroPitch = computeZeroPitchVector(myo.transform.right);
                 _referencePitch = pitchFromZero(referenceZeroPitch, myo.transform.right, myo.transform.forward);
             }
@@ -44,6 +49,10 @@ public class PlayerController : MonoBehaviour
         Vector3 zeroRoll = computeZeroRollVector(myo.transform.forward);
         float roll = rollFromZero(zeroRoll, myo.transform.forward, myo.transform.up);
         float relativeRoll = normalizeAngle(roll - _referenceRoll);
+
+        Vector3 zeroYaw = computeZeroYawVector(myo.transform.up);
+        float yaw = rollFromZero(zeroRoll, myo.transform.up, myo.transform.right);
+        float relativeYaw = normalizeAngle(yaw - _referenceYaw);
 
         Vector3 zeroPitch = computeZeroPitchVector(myo.transform.right);
         float pitch = rollFromZero(zeroPitch, myo.transform.right, myo.transform.forward);
@@ -54,12 +63,12 @@ public class PlayerController : MonoBehaviour
 
 
 
-            float moveHorizontal = relativeRoll;
-            float moveVertical = relativePitch;
+            float moveHorizontal = relativeYaw;
+            float moveVertical = -relativePitch;
 
             Vector3 movement = new Vector3(moveHorizontal , 0.0f, moveVertical);
 
-            rb.AddForce(-movement * speed);
+            rb.AddForce(movement * speed);
         }
 
     }
@@ -78,6 +87,26 @@ public class PlayerController : MonoBehaviour
         // Thus the sign of the dot product of forward and it yields the sign of our roll value.
         Vector3 cp = Vector3.Cross(up, zeroRoll);
         float directionCosine = Vector3.Dot(forward, cp);
+        float sign = directionCosine < 0.0f ? 1.0f : -1.0f;
+
+        // Return the angle of roll (in degrees) from the cosine and the sign.
+        return sign * Mathf.Rad2Deg * Mathf.Acos(cosine);
+    }
+
+    float yawFromZero(Vector3 zeroYaw, Vector3 up, Vector3 right)
+    {
+        // The cosine of the angle between the up vector and the zero roll vector. Since both are
+        // orthogonal to the forward vector, this tells us how far the Myo has been turned around the
+        // forward axis relative to the zero roll vector, but we need to determine separately whether the
+        // Myo has been rolled clockwise or counterclockwise.
+        float cosine = Vector3.Dot(right, zeroYaw);
+
+        // To determine the sign of the roll, we take the cross product of the up vector and the zero
+        // roll vector. This cross product will either be the same or opposite direction as the forward
+        // vector depending on whether up is clockwise or counter-clockwise from zero roll.
+        // Thus the sign of the dot product of forward and it yields the sign of our roll value.
+        Vector3 cp = Vector3.Cross(right, zeroYaw);
+        float directionCosine = Vector3.Dot(right, cp);
         float sign = directionCosine < 0.0f ? 1.0f : -1.0f;
 
         // Return the angle of roll (in degrees) from the cosine and the sign.
@@ -114,6 +143,15 @@ public class PlayerController : MonoBehaviour
         Vector3 roll = Vector3.Cross(m, myo.transform.forward);
 
         return roll.normalized;
+    }
+
+    Vector3 computeZeroYawVector(Vector3 up)  //axis that doesn't change
+    {
+        Vector3 globalright = Vector3.right;   //reference axis that rotate about, make angle with
+        Vector3 m = Vector3.Cross(myo.transform.up, globalright);
+        Vector3 yaw = Vector3.Cross(m, myo.transform.up);
+
+        return yaw.normalized;
     }
 
     Vector3 computeZeroPitchVector(Vector3 right)
