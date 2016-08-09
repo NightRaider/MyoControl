@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 using LockingPolicy = Thalmic.Myo.LockingPolicy;
 using Pose = Thalmic.Myo.Pose;
@@ -12,6 +13,8 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     public float speed;
 
+    public Text statusText;
+
     public GameObject myo;
     public GameObject force;    //solve the problem of Quanterion to Vecror3
     private Pose _lastPose = Pose.Unknown;
@@ -22,6 +25,7 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start () {
         rb = GetComponent<Rigidbody>();
+        statusText.text = "idle";
 	}
 	
 	void FixedUpdate () {
@@ -44,7 +48,7 @@ public class PlayerController : MonoBehaviour
             }
                 rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-
+            statusText.text = "idle";
         }
 
         Vector3 zeroRoll = computeZeroRollVector(myo.transform.forward);
@@ -54,7 +58,7 @@ public class PlayerController : MonoBehaviour
         Quaternion antiRoll = Quaternion.AngleAxis(relativeRoll, myo.transform.forward);
         if (thalmicMyo.pose == _lastPose && _lastPose == Pose.Fist)
         {
-            
+            statusText.text = "Moving";
             transform.rotation = _antiYaw * antiRoll * Quaternion.LookRotation(myo.transform.forward);
             Vector3 relativePosition = force.transform.position - transform.position;
             Vector3 movement = new Vector3(relativePosition.x, 0.0f, relativePosition.y);
@@ -62,6 +66,15 @@ public class PlayerController : MonoBehaviour
         }
 
     }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Pick Up"))
+        {
+            other.gameObject.SetActive(false);
+        }
+    }
+
 
     float rollFromZero(Vector3 zeroRoll, Vector3 forward, Vector3 up)
     {
