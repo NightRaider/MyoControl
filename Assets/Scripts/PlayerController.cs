@@ -14,11 +14,14 @@ public class PlayerController : MonoBehaviour
     public float factor;
 
     public GameObject myo;
+    public GameObject force;
     private Pose _lastPose = Pose.Unknown;
 
+    private Quaternion _antiYaw = Quaternion.identity;
     private float _referenceRoll = 0.0f;
     private float _referencePitch = 0.0f;
     private float _referenceYaw = 0.0f;
+
     // Use this for initialization
     void Start () {
         rb = GetComponent<Rigidbody>();
@@ -34,6 +37,20 @@ public class PlayerController : MonoBehaviour
             _lastPose = thalmicMyo.pose;
             if (thalmicMyo.pose == Pose.Fist)
             {
+                _antiYaw = Quaternion.FromToRotation(
+                new Vector3(0, 0, myo.transform.forward.z),
+                new Vector3(0, 0, 1)
+                );
+                //_antiRoll = Quaternion.FromToRotation(
+                //new Vector3(0, 0, myo.transform.forward.z),
+                //new Vector3(0, 0, 1)
+                //);
+                //_antiPitch = Quaternion.FromToRotation(
+                //new Vector3(0, 0, myo.transform.forward.z),
+                //new Vector3(0, 0, 1)
+                //);
+
+
                 Vector3 referenceZeroRoll = computeZeroRollVector(myo.transform.forward);
                 _referenceRoll = rollFromZero(referenceZeroRoll, myo.transform.forward, myo.transform.up);
 
@@ -58,17 +75,21 @@ public class PlayerController : MonoBehaviour
         float pitch = rollFromZero(zeroPitch, myo.transform.right, myo.transform.forward);
         float relativePitch = normalizeAngle(pitch- _referencePitch);
 
+
+        Quaternion antiRoll = Quaternion.AngleAxis(relativeRoll, myo.transform.forward);
+        Quaternion antiPitch = Quaternion.AngleAxis(relativePitch, myo.transform.right);
+        Quaternion antiYaw = Quaternion.AngleAxis(relativeYaw, myo.transform.up);
         if (thalmicMyo.pose == _lastPose && _lastPose == Pose.Fist)
         {
 
 
 
             float moveHorizontal = relativeYaw;
-            float moveVertical = -relativePitch;
-
-            Vector3 movement = new Vector3(moveHorizontal , 0.0f, moveVertical);
-
-            rb.AddForce(movement * speed);
+            float moveVertical = relativePitch;
+            transform.rotation = _antiYaw * antiRoll * Quaternion.LookRotation(myo.transform.forward);
+            Vector3 relativePosition = force.transform.position - transform.position;
+            Vector3 movement = new Vector3(relativePosition.x*2,0.0f,relativePosition.z);
+            rb.AddForce(-movement*speed);
         }
 
     }
