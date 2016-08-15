@@ -8,6 +8,8 @@ TagManager:
   - Character
   - Glove
   - Target
+  - Pick Up
+  - Cursor
   layers:
   - Default
   - TransparentFX
