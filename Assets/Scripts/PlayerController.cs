@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
     public float speed;
+    public Vector3 movement;
+    public Vector3 _lastPosition;
 
     public Text statusText;
 
@@ -20,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private Pose _lastPose = Pose.Unknown;
 
     private Quaternion _antiYaw = Quaternion.identity;
+    private Quaternion _antiPitch = Quaternion.identity;
     private float _referenceRoll = 0.0f;
 
     // Use this for initialization
@@ -35,17 +38,21 @@ public class PlayerController : MonoBehaviour
         if (thalmicMyo.pose != _lastPose)
         {
             _lastPose = thalmicMyo.pose;
+            _lastPosition = transform.position;
             if (thalmicMyo.pose == Pose.Fist)
             {
                 _antiYaw = Quaternion.FromToRotation(
                 new Vector3(myo.transform.forward.x, 0, myo.transform.forward.z),
                 new Vector3(0, 0, 1)
                 ); // updating reference
-
+                _antiPitch = Quaternion.FromToRotation(
+                myo.transform.forward,
+                new Vector3(myo.transform.forward.x, 0.0f, myo.transform.forward.z)
+                );
                 Vector3 referenceZeroRoll = computeZeroRollVector(myo.transform.forward);
                 _referenceRoll = rollFromZero(referenceZeroRoll, myo.transform.forward, myo.transform.up);
-
             }
+
                 rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             statusText.text = "idle";
@@ -59,10 +66,12 @@ public class PlayerController : MonoBehaviour
         if (thalmicMyo.pose == _lastPose && _lastPose == Pose.Fist)
         {
             statusText.text = "Moving";
-            transform.rotation = _antiYaw * antiRoll * Quaternion.LookRotation(myo.transform.forward);
+            transform.rotation = _antiYaw * antiRoll * _antiPitch * Quaternion.LookRotation(myo.transform.forward);
             Vector3 relativePosition = force.transform.position - transform.position;
-            Vector3 movement = new Vector3(relativePosition.x, 0.0f, relativePosition.y);
-            rb.MovePosition(transform.position+movement*speed*Time.deltaTime);
+            movement = new Vector3(relativePosition.x, 0.0f, relativePosition.y);
+            if (movement.magnitude>0.01)
+            rb.MovePosition(movement*speed+_lastPosition);
+            
         }
 
     }
